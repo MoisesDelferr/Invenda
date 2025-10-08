@@ -1,26 +1,24 @@
 import React, { useState } from 'react';
-import { User, Save, Phone } from 'lucide-react';
+import { User, Save } from 'lucide-react';
 import { Header } from '../components/Layout/Header';
 import { Card } from '../components/UI/Card';
 import { Input } from '../components/UI/Input';
 import { Button } from '../components/UI/Button';
 import { Customer } from '../types';
 
-interface AddCustomerScreenProps {
+interface EditCustomerScreenProps {
+  customer: Customer;
   onBack: () => void;
-  onAddCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => Customer;
-  onSuccess?: () => void;
-  fromInstallmentSale?: boolean;
+  onUpdateCustomer: (customerId: string, customerData: Omit<Customer, 'id' | 'createdAt'>) => void;
 }
 
-export const AddCustomerScreen: React.FC<AddCustomerScreenProps> = ({
+export const EditCustomerScreen: React.FC<EditCustomerScreenProps> = ({
+  customer,
   onBack,
-  onAddCustomer,
-  onSuccess,
-  fromInstallmentSale = false
+  onUpdateCustomer
 }) => {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [name, setName] = useState(customer.name);
+  const [phone, setPhone] = useState(customer.phone);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,38 +33,29 @@ export const AddCustomerScreen: React.FC<AddCustomerScreenProps> = ({
       return;
     }
 
-    const customer = onAddCustomer({
+    onUpdateCustomer(customer.id, {
       name: name.trim(),
       phone: phone.trim()
     });
 
-    if (fromInstallmentSale) {
-      alert(`Cliente cadastrado com sucesso!\nRetornando para finalizar a venda...`);
-    } else {
-      alert(`Cliente cadastrado com sucesso!\nNome: ${customer.name}\nTelefone: ${customer.phone}`);
-    }
-    
-    // Call onSuccess if provided, otherwise onBack
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      onBack();
-    }
+    alert('Informações do cliente atualizadas com sucesso!');
+    onBack();
   };
 
   const isFormValid = name.trim() && phone.trim();
+  const hasChanges = name.trim() !== customer.name || phone.trim() !== customer.phone;
 
   return (
     <div>
-      <Header title="Adicionar Cliente" onBack={onBack} />
+      <Header title="Editar Cliente" onBack={onBack} />
       
       <div className="p-4">
         <Card>
           <div className="flex items-center gap-3 mb-6">
-            <User className="h-8 w-8 text-emerald-600" />
+            <User className="h-8 w-8 text-blue-600" />
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Novo Cliente</h2>
-              <p className="text-gray-600">Preencha os dados do cliente</p>
+              <h2 className="text-xl font-bold text-gray-900">Editar Informações</h2>
+              <p className="text-gray-600">Atualize os dados do cliente</p>
             </div>
           </div>
 
@@ -99,19 +88,13 @@ export const AddCustomerScreen: React.FC<AddCustomerScreenProps> = ({
                 type="submit"
                 variant="primary"
                 icon={Save}
-                disabled={!isFormValid}
+                disabled={!isFormValid || !hasChanges}
                 fullWidth
               >
                 Salvar
               </Button>
             </div>
           </form>
-
-          <div className="mt-6 p-4 bg-emerald-50 rounded-lg">
-            <p className="text-sm text-emerald-700">
-              <strong>💡 Dica:</strong> O cliente ficará disponível para vendas parceladas futuras.
-            </p>
-          </div>
         </Card>
       </div>
     </div>

@@ -1,264 +1,445 @@
-import React, { useMemo } from 'react';
-import { Calendar, DollarSign, Package, TrendingUp, Clock, CheckCircle } from 'lucide-react';
-import { Header } from '../components/Layout/Header';
+import React, { useState, useMemo } from 'react';
+import { ArrowLeft, Calendar, DollarSign, TrendingUp, Eye, AlertCircle, Filter, Package, ShoppingCart, Crown } from 'lucide-react';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
-import { Input } from '../components/UI/Input';
-import { Sale } from '../types';
-import { isToday, isThisWeek, isThisMonth, formatCurrency, formatDate, formatTime } from '../utils/dateHelpers';
+import { Sale, InstallmentSale } from '../types';
+import { formatDate, formatCurrency } from '../utils/dateHelpers';
+import { useSubscription } from '../hooks/useSubscription';
 
 interface DashboardScreenProps {
   sales: Sale[];
+  installmentSales: InstallmentSale[];
   onBack: () => void;
-  onAddPayment: (saleId: string, amount: number) => void;
+  onViewSale: (sale: Sale) => void;
+  onViewInstallmentSale: (sale: InstallmentSale) => void;
+  onAddPayment: (saleId: string) => void;
+  onNavigate: (screen: string, data?: any) => void;
 }
 
-export const DashboardScreen: React.FC<DashboardScreenProps> = ({ sales, onBack, onAddPayment }) => {
-  const [selectedMonth, setSelectedMonth] = React.useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [paymentAmount, setPaymentAmount] = React.useState('');
-  const [selectedSale, setSelectedSale] = React.useState<Sale | null>(null);
+export default function DashboardScreen({
+  sales,
+  installmentSales,
+  onBack,
+  onViewSale,
+  onViewInstallmentSale,
+  onAddPayment,
+  onNavigate
+}: DashboardScreenProps) {
+  const { usageStats } = useSubscription();
+  const [filter, setFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  const filteredSales = useMemo(() => {
-    const [year, month] = selectedMonth.split('-').map(Number);
-    return sales.filter(sale => {
-      const saleDate = sale.date;
-      return saleDate.getFullYear() === year && saleDate.getMonth() === month - 1;
+  // Combine and sort all sales
+const allSales = useMemo(() => {
+  // Group normal sales by date and payment method (assuming they're part of the same transaction)
+  const salesByTransaction = new Map();
+  
+  sales.forEach(sale => {
+    // Create a transaction key based on date (rounded to minute) and payment method
+    const transactionKey = `${sale.date.toISOString().slice(0, 16)}-${sale.paymentMethod}`;
+    
+    if (!salesByTransaction.has(transactionKey)) {
+      salesByTransaction.set(transactionKey, {
+        id: sale.id, // Use first sale's ID as transaction ID
+        date: sale.date,
+        paymentMethod: sale.paymentMethod,
+        isOpen: sale.isOpen,
+        type: 'normal' as const,
+        items: [],
+        totalPrice: 0
+      });
+    }
+    
+    const transaction = salesByTransaction.get(transactionKey);
+    transaction.items.push({
+      productId: sale.productId,
+      productName: sale.productName,
+      productSku: sale.productSku,
+      quantity: sale.quantity,
+      unitPrice: sale.unitPrice,
+      totalPrice: sale.totalPrice
     });
-  }, [sales, selectedMonth]);
+    transaction.totalPrice += sale.totalPrice;
+  });
+  
+  const groupedNormalSales = Array.from(salesByTransaction.values());
 
-  const dashboardData = useMemo(() => {
-    const todaySales = filteredSales.filter(sale => isToday(sale.date));
-    const weeklySales = filteredSales.filter(sale => isThisWeek(sale.date));
-    const monthlySales = filteredSales.filter(sale => isThisMonth(sale.date));
-    const openSales = filteredSales.filter(sale => sale.isOpen);
-    const totalOpenAmount = openSales.reduce((sum, sale) => {
-      const totalPaid = sale.payments.reduce((paidSum, payment) => paidSum + payment.amount, 0);
-      return sum + ((sale.openAmount || 0) - totalPaid);
+  // Installment sales remain as they are
+  const groupedInstallmentSales = installmentSales.map(sale => ({
+    ...sale,
+    type: 'installment' as const,
+  }));
+
+  // Combine and sort
+  const combinedSales = [...groupedNormalSales, ...groupedInstallmentSales];
+  return combinedSales.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+}, [sales, installmentSales]);
+
+  // Filter sales based on selected period
+  const filteredSales = useMemo(() => {
+    if (filter === 'all') return allSales;
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    return allSales.filter(sale => {
+      const saleDate = new Date(sale.date);
+      if (filter === 'today') {
+        return saleDate >= today;
+      } else if (filter === 'week') {
+        return saleDate >= weekAgo;
+      } else if (filter === 'month') {
+        return saleDate.getMonth() === selectedMonth && saleDate.getFullYear() === selectedYear;
+      }
+      return true;
+    });
+  }, [allSales, filter, selectedMonth, selectedYear]);
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    const totalRevenue = filteredSales.reduce((sum, sale) => {
+      if (sale.type === 'normal') {
+        return sum + sale.totalPrice;
+      } else {
+        // For installment sales, count total value
+        return sum + sale.totalAmount;
+      }
     }, 0);
 
-    return {
-      dailyTotal: todaySales.reduce((sum, sale) => sum + sale.totalPrice, 0),
-      weeklyTotal: weeklySales.reduce((sum, sale) => sum + sale.totalPrice, 0),
-      monthlyTotal: monthlySales.reduce((sum, sale) => sum + sale.totalPrice, 0),
-      todaySales: todaySales.sort((a, b) => b.date.getTime() - a.date.getTime()),
-      openSales,
-      totalOpenAmount
-    };
-  }, [filteredSales]);
+    const totalSales = filteredSales.length;
+    
+    // Calculate pending amount from ALL installment sales (not just filtered ones)
+    const pendingAmount = installmentSales.reduce((sum, sale) => {
+      const totalPaid = sale.payments?.reduce((paidSum, payment) => paidSum + payment.amount, 0) || 0;
+      const totalReceived = sale.initialPayment + totalPaid;
+      const remaining = sale.totalAmount - totalReceived;
+      return sum + Math.max(0, remaining);
+    }, 0);
 
-  const handleAddPayment = () => {
-    if (selectedSale && paymentAmount) {
-      const amount = parseFloat(paymentAmount);
-      onAddPayment(selectedSale.id, amount);
-      setSelectedSale(null);
-      setPaymentAmount('');
-    }
+    return { totalRevenue, totalSales, pendingAmount };
+  }, [filteredSales, installmentSales]);
+
+  const getRemainingAmount = (sale: InstallmentSale) => {
+    const totalPaid = sale.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
+    const totalReceived = sale.initialPayment + totalPaid;
+    return sale.totalAmount - totalReceived;
   };
-
-  const getRemainingAmount = (sale: Sale) => {
-    const totalPaid = sale.payments.reduce((sum, payment) => sum + payment.amount, 0);
-    return (sale.openAmount || 0) - totalPaid;
-  };
-
-  const getPaymentMethodLabel = (method: string) => {
-    const labels = {
-      dinheiro: 'Dinheiro',
-      pix: 'PIX',
-      cartao: 'Cartão'
-    };
-    return labels[method as keyof typeof labels] || method;
-  };
-
-  const stats = [
-    {
-      title: 'Vendas Hoje',
-      value: formatCurrency(dashboardData.dailyTotal),
-      icon: DollarSign,
-      color: 'text-emerald-600'
-    },
-    {
-      title: 'Vendas Semana',
-      value: formatCurrency(dashboardData.weeklyTotal),
-      icon: TrendingUp,
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Vendas Mês',
-      value: formatCurrency(dashboardData.monthlyTotal),
-      icon: Calendar,
-      color: 'text-purple-600'
-    },
-    {
-      title: 'Itens Vendidos Hoje',
-      value: dashboardData.todaySales.reduce((sum, sale) => sum + sale.quantity, 0).toString(),
-      icon: Package,
-      color: 'text-orange-600'
-    },
-    {
-      title: 'Vendas em Aberto',
-      value: dashboardData.openSales.length.toString(),
-      icon: Clock,
-      color: 'text-orange-600'
-    },
-    {
-      title: 'Valor em Aberto',
-      value: formatCurrency(dashboardData.totalOpenAmount),
-      icon: DollarSign,
-      color: 'text-red-600'
-    }
-  ];
 
   return (
-    <div>
-      <Header title="Dashboard Vendas" onBack={onBack} />
-      
-      <div className="p-4 space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          {stats.map((stat, index) => (
-            <Card key={index} className="text-center">
-              <div className="flex justify-center mb-2">
-                <stat.icon className={`h-8 w-8 ${stat.color}`} />
-              </div>
-              <p className="text-xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-sm text-gray-600 mt-1">{stat.title}</p>
-            </Card>
-          ))}
-        </div>
-
-        {/* Month Filter */}
-        <Card>
-          <div className="flex items-center gap-3 mb-4">
-            <Calendar className="h-6 w-6 text-emerald-600" />
-            <h2 className="text-lg font-bold text-gray-900">Filtrar por Mês</h2>
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="p-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-xl font-bold text-gray-900">Dashboard de Vendas</h1>
           </div>
-          <Input
-            type="month"
-            value={selectedMonth}
-            onChange={setSelectedMonth}
-          />
-        </Card>
+        </div>
+      </div>
 
-        {/* Payment Modal */}
-        {selectedSale && (
-          <Card className="border-2 border-orange-300 bg-orange-50">
-            <div className="flex items-center gap-3 mb-4">
-              <DollarSign className="h-6 w-6 text-orange-600" />
-              <h2 className="text-lg font-bold text-gray-900">Registrar Pagamento</h2>
+      <div className="p-4 space-y-6">
+        {/* Usage Stats Banner */}
+        {usageStats && !usageStats.is_premium && (
+          <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-600" />
+                <h3 className="font-semibold text-slate-800">Uso do Plano Gratuito</h3>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onNavigate('account-plan')}
+                className="text-amber-700 border-amber-300 hover:bg-amber-100"
+              >
+                Ver Detalhes
+              </Button>
             </div>
-            
-            <div className="bg-white rounded-lg p-4 mb-4">
-              <h3 className="font-semibold text-gray-900">{selectedSale.productName}</h3>
-              <p className="text-sm text-gray-600">
-                Valor restante: {formatCurrency(getRemainingAmount(selectedSale))}
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <Input
-                label="Valor recebido"
-                type="number"
-                placeholder="0,00"
-                value={paymentAmount}
-                onChange={setPaymentAmount}
-                min={0.01}
-                step={0.01}
-              />
-              
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedSale(null);
-                    setPaymentAmount('');
-                  }}
-                  fullWidth
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleAddPayment}
-                  disabled={!paymentAmount || parseFloat(paymentAmount) <= 0}
-                  fullWidth
-                >
-                  Registrar
-                </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-slate-700">
+                  <Package className="w-4 h-4" />
+                  <span>Produtos: {usageStats.products.count} / {usageStats.products.limit}</span>
+                </div>
+                {usageStats.products.limit && (
+                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 rounded-full ${
+                        usageStats.products.percentage >= 100
+                          ? 'bg-red-500'
+                          : usageStats.products.percentage >= 80
+                          ? 'bg-amber-500'
+                          : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${Math.min(usageStats.products.percentage, 100)}%` }}
+                    ></div>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-slate-700">
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>Vendas: {usageStats.sales.count} / {usageStats.sales.limit}</span>
+                </div>
+                {usageStats.sales.limit && (
+                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 rounded-full ${
+                        usageStats.sales.percentage >= 100
+                          ? 'bg-red-500'
+                          : usageStats.sales.percentage >= 80
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(usageStats.sales.percentage, 100)}%` }}
+                    ></div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
         )}
 
+        {/* Filter Buttons */}
+        <div className="flex space-x-2">
+          <Button
+            variant={filter === 'all' ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('all')}
+          >
+            Todas
+          </Button>
+          <Button
+            variant={filter === 'today' ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('today')}
+          >
+            Hoje
+          </Button>
+          <Button
+            variant={filter === 'week' ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('week')}
+          >
+            Esta Semana
+          </Button>
+          <Button
+            variant={filter === 'month' ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('month')}
+          >
+            Mês
+          </Button>
+        </div>
+        
+        {/* Month/Year Selector */}
+        {filter === 'month' && (
+          <Card className="p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Filter className="w-5 h-5 text-gray-600" />
+              <h3 className="font-semibold text-gray-900">Filtrar por Mês</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              >
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {new Date(2024, i, 1).toLocaleDateString('pt-BR', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              >
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = new Date().getFullYear() - 2 + i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </Card>
+        )}
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <DollarSign className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Receita Total</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatCurrency(totals.totalRevenue)}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total de Vendas</p>
+                <p className="text-xl font-bold text-gray-900">{totals.totalSales}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center space-x-3">
+              <div 
+                className="p-2 bg-orange-100 rounded-lg cursor-pointer hover:bg-orange-200 transition-colors"
+                onClick={() => onNavigate('open-sales-list')}
+              >
+                <AlertCircle className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Valores em Aberto</p>
+                <p 
+                  className="text-xl font-bold text-orange-600 cursor-pointer hover:underline"
+                  onClick={() => onNavigate('open-sales-list')}
+                >
+                  {formatCurrency(totals.pendingAmount)}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
         {/* Sales List */}
-        <div>
-          <h2 className="text-lg font-bold text-gray-900 mb-4">
-            Vendas do Mês ({filteredSales.length})
-          </h2>
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-gray-900">Vendas Recentes</h2>
           
           {filteredSales.length === 0 ? (
-            <Card>
-              <div className="text-center py-8">
-                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Nenhuma venda registrada neste mês</p>
-              </div>
+            <Card className="p-8 text-center">
+              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Nenhuma venda encontrada para o período selecionado</p>
             </Card>
           ) : (
-            <div className="space-y-2">
-              {filteredSales.sort((a, b) => b.date.getTime() - a.date.getTime()).map((sale) => {
-                const remainingAmount = getRemainingAmount(sale);
-                const isOpenSale = sale.isOpen && remainingAmount > 0;
-                
-                return (
-                <Card 
-                  key={sale.id} 
-                  className={isOpenSale ? 'bg-orange-50 border-orange-200' : ''}
-                  onClick={isOpenSale ? () => setSelectedSale(sale) : undefined}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{sale.productName}</h3>
-                        {isOpenSale && <Clock className="h-4 w-4 text-orange-600" />}
-                        {!sale.isOpen && <CheckCircle className="h-4 w-4 text-emerald-600" />}
-                      </div>
-                      <p className="text-sm text-gray-600">SKU: {sale.productSku}</p>
+            filteredSales.map((sale) => (
+              <Card key={`${sale.type}-${sale.id}`} className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        sale.type === 'installment' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {sale.type === 'installment' ? 'Parcelada' : 'À Vista'}
+                      </span>
+                      {sale.type === 'installment' && getRemainingAmount(sale as InstallmentSale) > 0 && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Em Aberto
+                        </span>
+                      )}
+                    </div>
+                    
+                    <p className="font-semibold text-gray-900">
+                      {sale.type === 'normal' 
+                        ? formatCurrency(sale.totalPrice)
+                        : formatCurrency((sale as InstallmentSale).totalAmount)
+                      }
+                    </p>
+                    
+                    <p className="text-sm text-gray-600">
+                      {formatDate(sale.date)}
+                    </p>
+                    
+                    {sale.type === 'normal' && sale.items && sale.items.length > 1 && (
                       <p className="text-sm text-gray-600">
-                        {formatDate(sale.date)} às {formatTime(sale.date)}
+                        {sale.items.length} produtos
                       </p>
-                      <p className="text-sm text-gray-600">
-                        {getPaymentMethodLabel(sale.paymentMethod)}
-                      </p>
-                      {isOpenSale && (
-                        <p className="text-sm text-orange-600 font-medium mt-1">
-                          Restante: {formatCurrency(remainingAmount)}
+                    )}
+                    
+                    {sale.type === 'installment' && (
+                      <div className="mt-2 text-sm">
+                        <p className="text-gray-600">
+                          Cliente: {(sale as InstallmentSale).customerName}
                         </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p className={`font-bold text-lg ${isOpenSale ? 'text-orange-600' : 'text-emerald-600'}`}>
-                        {formatCurrency(sale.totalPrice)}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {sale.quantity}x {formatCurrency(sale.unitPrice)}
-                      </p>
-                      {isOpenSale && (
-                        <div className="mt-2">
-                          <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
-                            Clique para pagar
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                        {getRemainingAmount(sale as InstallmentSale) > 0.01 && (
+                          <p className="text-red-600 font-medium">
+                            Restante: {formatCurrency(getRemainingAmount(sale as InstallmentSale))}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </Card>
-              )})}
-            </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (sale.type === 'normal') {
+                          // For grouped normal sales, we need to create a compatible Sale object
+                          const firstItem = sale.items[0];
+                          const compatibleSale: Sale = {
+                            id: sale.id,
+                            productId: firstItem.productId,
+                            productName: firstItem.productName,
+                            productSku: firstItem.productSku,
+                            quantity: firstItem.quantity,
+                            unitPrice: firstItem.unitPrice,
+                            totalPrice: sale.totalPrice,
+                            paymentMethod: sale.paymentMethod,
+                            isOpen: sale.isOpen,
+                            payments: sale.payments || [],
+                            date: sale.date,
+                            // Add items for multi-product display
+                            items: sale.items
+                          };
+                          onViewSale({ ...compatibleSale, previousScreen: 'dashboard' });
+                        } else {
+                          onViewInstallmentSale(sale as InstallmentSale);
+                        }
+                      }}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    
+                    {sale.type === 'installment' && getRemainingAmount(sale as InstallmentSale) > 0.01 && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => onNavigate('payment-modal', { 
+                          sale: sale as InstallmentSale, 
+                          previousScreen: 'dashboard' 
+                        })}
+                      >
+                        Pagar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))
           )}
         </div>
       </div>
     </div>
   );
-};
+}

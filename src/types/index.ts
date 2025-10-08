@@ -22,6 +22,7 @@ export interface Sale {
   openAmount?: number;
   payments: Payment[];
   date: Date;
+  items?: SaleItem[]; // Optional field for grouped sales display
 }
 
 export interface Payment {

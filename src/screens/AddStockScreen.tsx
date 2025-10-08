@@ -14,33 +14,38 @@ interface AddStockScreenProps {
   onUpdateStock: (productId: string, newStock: number) => void;
 }
 
-export const AddStockScreen: React.FC<AddStockScreenProps> = ({ 
-  products, 
-  onBack, 
-  onUpdateStock 
+export const AddStockScreen: React.FC<AddStockScreenProps> = ({
+  products,
+  onBack,
+  onUpdateStock
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [stockToAdd, setStockToAdd] = useState('');
 
-  const filteredProducts = products.filter(product =>
+  const filteredProducts = (products || []).filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.variation.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddStock = () => {
+  const handleAddStock = async () => {
     if (selectedProduct && stockToAdd) {
       const additionalStock = parseInt(stockToAdd);
       const newTotalStock = selectedProduct.stock + additionalStock;
-      
-      onUpdateStock(selectedProduct.id, newTotalStock);
-      alert(`Estoque atualizado!\nProduto: ${selectedProduct.name}\nEstoque anterior: ${selectedProduct.stock}\nAdicionado: ${additionalStock}\nNovo estoque: ${newTotalStock}`);
-      
-      setSelectedProduct(null);
-      setStockToAdd('');
-      setSearchQuery('');
+
+      try {
+        await onUpdateStock(selectedProduct.id, additionalStock);
+        alert(`Estoque atualizado!\nProduto: ${selectedProduct.name}\nEstoque anterior: ${selectedProduct.stock}\nAdicionado: ${additionalStock}\nNovo estoque: ${newTotalStock}`);
+
+        setSelectedProduct(null);
+        setStockToAdd('');
+        setSearchQuery('');
+      } catch (error) {
+        console.error('Error updating stock:', error);
+        alert('Erro ao atualizar estoque. Tente novamente.');
+      }
     }
   };
 

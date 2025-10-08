@@ -24,7 +24,7 @@ export const LogoutButton: React.FC = () => {
 
   return (
     <Button
-      variant="logout"
+      variant="primary"
       icon={LogOut}
       onClick={handleLogout}
       disabled={loading}

@@ -29,7 +29,7 @@ export const Button: React.FC<ButtonProps> = ({
     secondary: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
     danger: 'bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg',
     outline: 'border-2 border-emerald-500 text-emerald-500 hover:bg-emerald-50',
-    logout: 'bg-green-300 text-white hover:bg-green-400 shadow-md hover:shadow-lg',
+    logout: 'bg-red-600 text-white hover:bg-green-400 shadow-md hover:shadow-lg',
   };
   
   const sizeClasses = {

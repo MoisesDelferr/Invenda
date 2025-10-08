@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react'; // ✅ Alteração: adicionei useState
 import { Trash2, Package, AlertTriangle } from 'lucide-react';
 import { Header } from '../components/Layout/Header';
 import { Card } from '../components/UI/Card';
@@ -17,22 +17,47 @@ export const DeleteSalesScreen: React.FC<DeleteSalesScreenProps> = ({
   onBack, 
   onDeleteSale 
 }) => {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedSaleToDelete, setSelectedSaleToDelete] = useState<Sale | null>(null);
+
+  // ✅ Novos estados para a mensagem temporária
+  const [showMessage, setShowMessage] = useState(false);
+  const [messageText, setMessageText] = useState('');
+
+  // ✅ Função para exibir a mensagem temporária
+  const showTemporaryMessage = (text: string, duration = 3000) => {
+    setMessageText(text);
+    setShowMessage(true);
+
+    setTimeout(() => {
+      setShowMessage(false);
+      setMessageText('');
+    }, duration);
+  };
+
   const todaySales = sales.filter(sale => isToday(sale.date))
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 
   const handleDeleteSale = (sale: Sale) => {
-    const confirmDelete = window.confirm(
-      `Tem certeza que deseja excluir esta venda?\n\n` +
-      `Produto: ${sale.productName}\n` +
-      `Quantidade: ${sale.quantity}\n` +
-      `Valor: ${formatCurrency(sale.totalPrice)}\n\n` +
-      `O estoque será automaticamente restaurado.`
-    );
+    setSelectedSaleToDelete(sale);
+    setShowConfirmModal(true);
+  };
 
-    if (confirmDelete) {
-      onDeleteSale(sale.id);
-      alert('Venda excluída com sucesso!\nEstoque foi restaurado automaticamente.');
+  const confirmDelete = () => {
+    if (selectedSaleToDelete) {
+      onDeleteSale(selectedSaleToDelete.id);
+
+      // ✅ Alteração: substituí alert() por mensagem em tela
+      showTemporaryMessage('Venda excluída com sucesso! Estoque restaurado automaticamente.');
+
+      setShowConfirmModal(false);
+      setSelectedSaleToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmModal(false);
+    setSelectedSaleToDelete(null);
   };
 
   return (
@@ -119,6 +144,59 @@ export const DeleteSalesScreen: React.FC<DeleteSalesScreenProps> = ({
             <p>• Confirme sempre antes de excluir</p>
           </div>
         </Card>
+        
+        {/* Confirmation Modal */}
+        {showConfirmModal && selectedSaleToDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="h-8 w-8 text-red-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  Deseja realmente excluir esta venda?
+                </h2>
+                <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+                  <p className="text-sm text-gray-600 mb-1">
+                    <strong>Produto:</strong> {selectedSaleToDelete.productName}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">
+                    <strong>Quantidade:</strong> {selectedSaleToDelete.quantity}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">
+                    <strong>Valor:</strong> {formatCurrency(selectedSaleToDelete.totalPrice)}
+                  </p>
+                  <p className="text-xs text-orange-600 mt-2">
+                    O estoque será automaticamente restaurado.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={cancelDelete}
+                    fullWidth
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={confirmDelete}
+                    fullWidth
+                  >
+                    Excluir
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* ✅ Mensagem temporária */}
+        {showMessage && (
+          <div className="fixed top-4 right-4 bg-orange-500 text-white px-4 py-2 rounded shadow-lg z-50">
+            {messageText}
+          </div>
+        )}
       </div>
     </div>
   );

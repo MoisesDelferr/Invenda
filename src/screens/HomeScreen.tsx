@@ -1,8 +1,7 @@
 import React from 'react';
-import { ShoppingCart, TrendingUp, Package, Trash2 } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Package, Trash2, Users, Menu } from 'lucide-react';
 import { Header } from '../components/Layout/Header';
 import { Button } from '../components/UI/Button';
-import { LogoutButton } from '../components/UI/LogoutButton';
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void;
@@ -29,6 +28,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       color: 'bg-emerald-600 hover:bg-emerald-700'
     },
     {
+      id: 'customers',
+      title: 'Clientes',
+      icon: Users,
+      color: 'bg-blue-500 hover:bg-blue-600'
+    },
+    {
       id: 'delete-sales',
       title: 'Excluir Vendas',
       icon: Trash2,
@@ -38,18 +43,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
 
   return (
     <div>
+      {/* Header */}
       <div className="bg-emerald-500 text-white p-4 shadow-md">
         <div className="flex items-center justify-between">
+          {/* Logo + Nome */}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-emerald-400 rounded-full flex items-center justify-center">
               <span className="text-sm font-bold">I</span>
             </div>
             <h1 className="text-lg font-bold">Invenda</h1>
           </div>
-          <LogoutButton />
+
+          {/* Botão de Menu no lugar do LogoutButton */}
+          <button
+            onClick={() => onNavigate('config')}
+            className="p-2 rounded-full hover:bg-emerald-600 transition-colors"
+          >
+            <Menu className="w-6 h-6 text-white" />
+          </button>
         </div>
       </div>
       
+      {/* Texto de boas-vindas */}
       <div className="p-6">
         <div className="mb-8 text-center">
           <p className="text-gray-600 text-lg">
@@ -57,6 +72,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
           </p>
         </div>
 
+        {/* Menu principal */}
         <div className="grid grid-cols-2 gap-4">
           {menuItems.map((item) => (
             <button
