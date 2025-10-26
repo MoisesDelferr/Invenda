@@ -31,13 +31,7 @@ export const Header: React.FC<HeaderProps> = ({ title, onBack, showLogo = false,
           <h1 className="text-lg font-bold">{title}</h1>
         </div>
 
-        {/* Menu no canto superior direito */}
-        <button
-          onClick={onOpenSettings}
-          className="p-2 rounded-full hover:bg-emerald-600 transition"
-        >
-          <Menu size={22} />
-        </button>
+        
       </div>
     </header>
   );

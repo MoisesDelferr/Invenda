@@ -21,6 +21,11 @@ interface AddProductScreenProps {
 export const AddProductScreen: React.FC<AddProductScreenProps> = ({ onBack, onAddProduct }) => {
   const { checkCanCreateProduct } = useSubscription();
   const { user } = useAuth();
+
+  // ✅ CORREÇÃO: Ambos os estados do Toast devem ser declarados aqui
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false); 
+  
   const [formData, setFormData] = useState({
     name: '',
     model: '',
@@ -29,7 +34,7 @@ export const AddProductScreen: React.FC<AddProductScreenProps> = ({ onBack, onAd
     stock: ''
   });
   // ✅ NOVO: Estado para controlar a submissão e prevenir cliques duplos/duplicação
-  const [isSubmitting, setIsSubmitting] = useState(false); 
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [limitInfo, setLimitInfo] = useState<{ currentCount: number; limit: number; message: string } | null>(null);
 
@@ -39,6 +44,17 @@ export const AddProductScreen: React.FC<AddProductScreenProps> = ({ onBack, onAd
       [field]: value
     }));
   };
+
+  // Adicionando a função displayToast fora do handleSubmit
+  const displayToast = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+      setToastMessage('');
+    }, 3000); // Esconde após 3 segundos
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,23 +115,34 @@ export const AddProductScreen: React.FC<AddProductScreenProps> = ({ onBack, onAd
       // ✅ CHAMADA ÚNICA: Usa a função do useStorage e espera o produto retornado (com o SKU correto)
       const product = await onAddProduct(productToInsert);
 
-      // ✅ CONSISTÊNCIA: Alert usa o SKU retornado pelo banco
-      alert(`Produto criado com sucesso!\nSKU: ${product.sku}`);
-      onBack();
+      // ✅ CORREÇÃO DA SINTAXE: Usando Template Literal (crases) para SKU
+      displayToast(`✅ Produto criado com sucesso! SKU: ${product.sku}`);
+     setTimeout(() => {
+       onBack();
+     }, 1000);
+      
     } catch (error) {
       console.error('Error creating product:', error);
       alert('Erro ao criar produto. Tente novamente.');
     } finally {
       // ✅ FINALIZAÇÃO: Libera o botão, garantindo que só houve uma submissão
-      setIsSubmitting(false); 
+      setIsSubmitting(false); 
     }
   };
 
+
   const isFormValid =
-    formData.name && formData.model && formData.salePrice && formData.variation && formData.stock;
+    formData.name && formData.model && formData.salePrice && formData.stock;
 
   return (
-    <div>
+    <div className="relative">
+      {/* NOVO: Toast de mensagem simples na parte superior */}
+      {showToast && (
+        <div className="fixed top-0 left-1/2 transform -translate-x-1/2 mt-4 z-50 p-3 bg-emerald-600 text-white font-medium rounded-lg shadow-xl transition-opacity duration-300">
+          {toastMessage}
+        </div>
+      )}
+
       <Header title="Novo Produto" onBack={onBack} />
 
       <div className="p-4">
@@ -150,7 +177,6 @@ export const AddProductScreen: React.FC<AddProductScreenProps> = ({ onBack, onAd
               placeholder="Ex: Azul P, Branco 42, 100g..."
               value={formData.variation}
               onChange={(value) => handleInputChange('variation', value)}
-              required
             />
 
             <Input
@@ -184,14 +210,14 @@ export const AddProductScreen: React.FC<AddProductScreenProps> = ({ onBack, onAd
                 fullWidth
                 size="lg"
               >
-                {isSubmitting ? 'Cadastrando...' : 'Cadastrar Produto'} 
+                {isSubmitting ? 'Cadastrando...' : 'Cadastrar Produto'} 
               </Button>
             </div>
           </form>
 
-          <div className="mt-6 p-4 bg-emerald-50 rounded-lg">
+          <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
             <p className="text-sm text-emerald-700">
-              <strong>💡 Dica:</strong> O código SKU será gerado automaticamente após o cadastro.
+              <strong>💡 Dica:</strong> O código do produto será gerado automaticamente após o cadastro.
             </p>
           </div>
         </Card>

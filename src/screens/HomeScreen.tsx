@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShoppingCart, TrendingUp, Package, Trash2, Users, Menu } from 'lucide-react';
+import BannerImage from '../assets/banner.png';
 import { Header } from '../components/Layout/Header';
 import { Button } from '../components/UI/Button';
 
@@ -10,6 +11,12 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const menuItems = [
     {
+      id: 'stock',
+      title: 'Estoque',
+      icon: Package,
+      color: 'bg-emerald-500 hover:bg-emerald-700'
+    },
+    {
       id: 'register-sale',
       title: 'Registrar Venda',
       icon: ShoppingCart,
@@ -19,19 +26,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       id: 'dashboard',
       title: 'Dashboard Vendas',
       icon: TrendingUp,
-      color: 'bg-emerald-400 hover:bg-emerald-500'
+      color: 'bg-emerald-500 hover:bg-emerald-600'
     },
-    {
-      id: 'stock',
-      title: 'Estoque',
-      icon: Package,
-      color: 'bg-emerald-600 hover:bg-emerald-700'
-    },
+    
     {
       id: 'customers',
       title: 'Clientes',
       icon: Users,
-      color: 'bg-blue-500 hover:bg-blue-600'
+      color: 'bg-orange-400 hover:bg-orange-600'
     },
     {
       id: 'delete-sales',
@@ -67,9 +69,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       {/* Texto de boas-vindas */}
       <div className="p-6">
         <div className="mb-8 text-center">
-          <p className="text-gray-600 text-lg">
-            Gerencie suas vendas de forma simples e rápida
-          </p>
+          {/* Usando a variável de importação 'BannerImage' no 'src' */}
+          <img 
+            //src={BannerImage} 
+          />
         </div>
 
         {/* Menu principal */}

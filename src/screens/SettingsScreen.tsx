@@ -41,7 +41,7 @@ export const ConfigScreen: React.FC<ConfigScreenProps> = ({ user, onBack, onNavi
           {/* Foto do usuário */}
           <div className="flex justify-center">
             <img
-              src="https://img.freepik.com/psd-gratuitas/ilustracao-3d-de-avatar-ou-perfil-humano_23-2150671142.jpg?semt=ais_hybrid&w=740&q=80" // substitua pelo link correto da imagem
+              src="https://img.freepik.com/premium-vector/businessman-sitting-big-money-coins-finance-success-money-wealth_194360-190.jpg" // substitua pelo link correto da imagem
               alt="Foto do usuário"
               className="w-24 h-24 rounded-full object-cover shadow-lg"
             />

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Calendar, DollarSign, TrendingUp, Eye, AlertCircle, Filter, Package, ShoppingCart, Crown } from 'lucide-react';
+import { Header } from '../components/Layout/Header';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
 import { Sale, InstallmentSale } from '../types';
@@ -130,24 +131,8 @@ const allSales = useMemo(() => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              className="p-2"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="text-xl font-bold text-gray-900">Dashboard de Vendas</h1>
-          </div>
-        </div>
-      </div>
-
+    <div>
+      <Header title="Dashboard de vendas" onBack={onBack} />
       <div className="p-4 space-y-6">
         {/* Usage Stats Banner */}
         {usageStats && !usageStats.is_premium && (
