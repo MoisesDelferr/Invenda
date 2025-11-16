@@ -22,10 +22,10 @@ export const ConfigScreen: React.FC<ConfigScreenProps> = ({ user, onBack, onNavi
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-white shadow">
-        <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100">
+        <button onClick={onBack} className="p-2 rounded-full hover:bg-emerald-500">
           <ArrowLeft className="w-6 h-6 text-gray-700" />
         </button>
-        <h1 className="text-lg font-bold text-gray-800">Configurações</h1>
+        <h1 className="text-lg font-bold text-emerald-500">Configurações</h1>
         <div className="w-8" /> {/* placeholder para centralizar */}
       </div>
 
@@ -62,7 +62,7 @@ export const ConfigScreen: React.FC<ConfigScreenProps> = ({ user, onBack, onNavi
           >
             <Crown className="w-5 h-5" />
             <span className="font-medium">Plano e Uso</span>
-          </button>
+            </button>
           <button className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white rounded-lg shadow hover:bg-gray-50">
             <User className="w-5 h-5 text-emerald-600" />
             <span className="text-gray-700 font-medium">Editar Perfil</span>

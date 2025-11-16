@@ -10,8 +10,8 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ title, onBack, showLogo = false, onOpenSettings }) => {
   return (
-    <header className="bg-emerald-500 text-white p-4 shadow-md">
-      <div className="flex items-center justify-between">
+    <header className="bg-white text-emerald-500 p-4 shadow-md">
+      <div className="flex items-center justify-around">
         
         {/* Botão Voltar */}
         {onBack ? (

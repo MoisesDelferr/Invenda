@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { UserPlus, Eye, EyeOff } from 'lucide-react';
 import { Header } from '../../components/Layout/Header';
 import { Card } from '../../components/UI/Card';
 import { Input } from '../../components/UI/Input';
@@ -11,12 +11,15 @@ interface RegisterScreenProps {
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigate }) => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { signUp } = useAuth();
 
@@ -38,7 +41,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigate }) =>
     }
 
     try {
-      const { error } = await signUp(email, password);
+      const { error } = await signUp(email, password, name);
       
       if (error) {
         if (error.message.includes('User already registered')) {
@@ -59,6 +62,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigate }) =>
   };
 
   const isFormValid = email && password && confirmPassword;
+
+  const passwordRequirements = [
+    { label: 'Pelo menos 8 caracteres', valid: password.length >= 8 },
+    { label: 'Uma letra maiúscula', valid: /[A-Z]/.test(password) },
+    { label: 'Um número', valid: /\d/.test(password) },
+    { label: 'Um caractere especial', valid: /[^A-Za-z0-9]/.test(password) },
+  ];
 
   if (success) {
     return (
@@ -106,6 +116,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigate }) =>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
+            
+            <Input
+              label="Nome"
+              type="name"
+              placeholder="Informe seu nome"
+              value={name}
+              onChange={setName}
+              required
+            />
+            
             <Input
               label="Email"
               type="email"
@@ -115,23 +135,52 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigate }) =>
               required
             />
 
-            <Input
-              label="Senha"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={setPassword}
-              required
-            />
+            <div className="relative">
+              <Input
+                label="Senha"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={setPassword}
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-9 text-gray-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
-            <Input
-              label="Confirmar Senha"
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={setConfirmPassword}
-              required
-            />
+            <div className="relative">
+              <Input
+                label="Confirmar Senha"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-9 text-gray-500"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            <div className="space-y-1 text-xs"> {/* 👈 diminui a fonte */}
+  {passwordRequirements.map((req, idx) => (
+    <p
+      key={idx}
+      className={req.valid ? 'text-emerald-600' : 'text-gray-500'} // 👈 cinza neutro no ❌
+    >
+      {req.valid ? '✔️' : '✖️'} {req.label}
+    </p>
+  ))}
+</div>
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
@@ -153,7 +202,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigate }) =>
 
           <div className="mt-6 p-4 bg-emerald-50 rounded-lg">
             <p className="text-sm text-emerald-700">
-              <strong>💡 Dica:</strong> Use uma senha forte com pelo menos 6 caracteres.
+              <strong>💡 Dica:</strong> Use uma senha forte com pelo menos 8 caracteres.
             </p>
           </div>
         </Card>

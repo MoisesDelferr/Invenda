@@ -1,57 +1,82 @@
 import React from 'react';
-import { DivideIcon as LucideIcon } from 'lucide-react';
 
-interface ButtonProps {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
   children: React.ReactNode;
-  onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'logout';
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  icon?: LucideIcon;
-  disabled?: boolean;
-  fullWidth?: boolean;
-  type?: 'button' | 'submit';
 }
 
 export const Button: React.FC<ButtonProps> = ({
-  children,
-  onClick,
   variant = 'primary',
   size = 'md',
-  icon: Icon,
-  disabled = false,
-  fullWidth = false,
-  type = 'button'
+  loading = false,
+  children,
+  className = '',
+  disabled,
+  ...props
 }) => {
-  const baseClasses = 'font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-95';
-  
-  const variantClasses = {
-    primary: 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg',
-    secondary: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
-    danger: 'bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg',
-    outline: 'border-2 border-emerald-500 text-emerald-500 hover:bg-emerald-50',
-    logout: 'bg-red-600 text-white hover:bg-green-400 shadow-md hover:shadow-lg',
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'secondary':
+        return 'bg-gray-600 hover:bg-gray-700 text-white';
+      case 'outline':
+        return 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700';
+      case 'ghost':
+        return 'bg-transparent hover:bg-gray-100 text-gray-700';
+      default:
+        return 'bg-blue-600 hover:bg-blue-700 text-white';
+    }
   };
-  
-  const sizeClasses = {
-    sm: 'px-3 py-2 text-sm',
-    md: 'px-4 py-3 text-base',
-    lg: 'px-6 py-4 text-lg',
-    xl: 'px-8 py-6 text-xl'
+
+  const getSizeStyles = () => {
+    switch (size) {
+      case 'sm':
+        return 'px-3 py-1.5 text-sm';
+      case 'lg':
+        return 'px-6 py-3 text-lg';
+      default:
+        return 'px-4 py-2 text-base';
+    }
   };
-  
-  const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
-  const widthClasses = fullWidth ? 'w-full' : '';
-  
-  const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${disabledClasses} ${widthClasses}`;
 
   return (
     <button
-      type={type}
-      className={classes}
-      onClick={onClick}
-      disabled={disabled}
+      className={`
+        inline-flex items-center justify-center
+        font-medium rounded-lg
+        transition-colors duration-200
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+        disabled:opacity-50 disabled:cursor-not-allowed
+        ${getVariantStyles()}
+        ${getSizeStyles()}
+        ${className}
+      `}
+      disabled={disabled || loading}
+      {...props}
     >
-      {Icon && <Icon size={size === 'xl' ? 24 : size === 'lg' ? 20 : 16} />}
+      {loading && (
+      <svg
+          className="animate-spin -ml-1 mr-2 h-4 w-4"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      )}
       {children}
     </button>
   );

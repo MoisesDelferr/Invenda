@@ -1,10 +1,14 @@
 import { Crown, Package, ShoppingCart, TrendingUp, Sparkles } from 'lucide-react';
+import { useState } from 'react';
 import { useSubscription } from '../hooks/useSubscription';
+import { useStripe } from '../hooks/useStripe';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
 
 export function AccountPlanScreen() {
   const { usageStats, loading, error } = useSubscription();
+  const { redirectToCheckout, loading: stripeLoading } = useStripe();
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -37,6 +41,15 @@ export function AccountPlanScreen() {
 
   const showProductWarning = !isPremium && productsPercentage >= 80;
   const showSalesWarning = !isPremium && salesPercentage >= 80;
+
+  const handleUpgradeClick = async () => {
+    setUpgradeError(null);
+    try {
+      await redirectToCheckout();
+    } catch (err) {
+      setUpgradeError(err instanceof Error ? err.message : 'Erro ao processar pagamento');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
@@ -77,6 +90,12 @@ export function AccountPlanScreen() {
 
           {!isPremium && (
             <div className="space-y-4">
+              {upgradeError && (
+                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm text-red-600">{upgradeError}</p>
+                </div>
+              )}
+
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <h3 className="font-semibold text-slate-800 mb-3">Recursos Premium:</h3>
                 <ul className="space-y-2">
@@ -101,10 +120,21 @@ export function AccountPlanScreen() {
 
               <Button
                 variant="primary"
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3"
+                onClick={handleUpgradeClick}
+                disabled={stripeLoading}
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Crown className="w-5 h-5 mr-2" />
-                Assinar Premium
+                {stripeLoading ? (
+                  <>
+                    <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></div>
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Crown className="w-5 h-5 mr-2 inline-block" />
+                    Assinar Premium
+                  </>
+                )}
               </Button>
             </div>
           )}
@@ -233,10 +263,21 @@ export function AccountPlanScreen() {
               </div>
               <Button
                 variant="primary"
-                className="bg-white text-slate-800 hover:bg-slate-100 font-semibold px-8 py-3 whitespace-nowrap"
+                onClick={handleUpgradeClick}
+                disabled={stripeLoading}
+                className="bg-white text-slate-800 hover:bg-slate-100 font-semibold px-8 py-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Crown className="w-5 h-5 mr-2" />
-                Fazer Upgrade
+                {stripeLoading ? (
+                  <>
+                    <div className="w-5 h-5 mr-2 border-2 border-slate-800 border-t-transparent rounded-full animate-spin inline-block"></div>
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Crown className="w-5 h-5 mr-2 inline-block" />
+                    Fazer Upgrade
+                  </>
+                )}
               </Button>
             </div>
           </Card>

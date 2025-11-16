@@ -1,47 +1,49 @@
 import React from 'react';
 
-interface InputProps {
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
-  type?: 'text' | 'number' | 'search' | 'email' | 'password';
-  placeholder?: string;
-  value: string | number;
-  onChange: (value: string) => void;
-  required?: boolean;
-  disabled?: boolean;
-  min?: number;
-  step?: number;
+  error?: string;
+  helperText?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
   label,
-  type = 'text',
-  placeholder,
-  value,
-  onChange,
-  required = false,
-  disabled = false,
-  min,
-  step
+  error,
+  helperText,
+  className = '',
+  id,
+  ...props
 }) => {
+  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor={inputId}
+          className="block text-sm font-medium text-gray-700"
+        >
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
       <input
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        disabled={disabled}
-        min={min}
-        step={step}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors text-gray-900 placeholder-gray-500"
+        id={inputId}
+        className={`
+          block w-full px-3 py-2 border rounded-lg
+          text-gray-900 placeholder-gray-500
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+          disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
+          ${error ? 'border-red-300' : 'border-gray-300'}
+          ${className}
+        `}
+        {...props}
       />
+      {error && (
+        <p className="text-sm text-red-600">{error}</p>
+      )}
+      {helperText && !error && (
+        <p className="text-sm text-gray-500">{helperText}</p>
+      )}
     </div>
   );
 };

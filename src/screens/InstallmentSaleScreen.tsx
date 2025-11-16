@@ -83,11 +83,7 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
       };
 
       onAddInstallmentSale(installmentSaleData);
-      
-      alert(`Venda parcelada registrada com sucesso!\nCliente: ${selectedCustomer.name}\nTotal: ${formatCurrency(totalAmount)}\nEntrada: ${formatCurrency(initialPaymentValue)}\n${installmentCount}x de ${formatCurrency(installmentAmount)}`);
-      
       onBack();
-      
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erro ao registrar venda parcelada');
       setShowSummary(false);
@@ -98,7 +94,7 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
     return (
       <div className="flex flex-col h-screen">
         <Header title="Resumo da Venda Parcelada" onBack={() => setShowSummary(false)} />
-        
+
         <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
           {/* Customer Info */}
           <Card>
@@ -106,7 +102,7 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
               <User className="h-6 w-6 text-emerald-600" />
               <h2 className="text-lg font-bold text-gray-900">Cliente</h2>
             </div>
-            
+
             {selectedCustomer && (
               <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                 <h3 className="font-semibold text-emerald-900">{selectedCustomer.name}</h3>
@@ -156,17 +152,17 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
                 <span className="text-gray-600">Valor total:</span>
                 <span className="font-semibold">{formatCurrency(totalAmount)}</span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-gray-600">Pagamento inicial:</span>
                 <span className="font-semibold">{formatCurrency(initialPaymentValue)}</span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-gray-600">Valor restante:</span>
                 <span className="font-semibold">{formatCurrency(remainingAmount)}</span>
               </div>
-              
+
               <div className="flex justify-between border-t pt-2">
                 <span className="text-gray-600">Parcelamento:</span>
                 <span className="font-semibold text-emerald-600">
@@ -177,24 +173,14 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
           </Card>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowSummary(false)}
-              fullWidth
-            >
+            <Button variant="outline" onClick={() => setShowSummary(false)} fullWidth>
               Voltar
             </Button>
-            <Button
-              variant="primary"
-              icon={ShoppingCart}
-              onClick={handleConfirmSale}
-              fullWidth
-            >
+            <Button variant="primary" icon={ShoppingCart} onClick={handleConfirmSale} fullWidth>
               Concluir
             </Button>
           </div>
-          {/* Aumento do espaço extra para garantir que os botões não sejam cortados */}
-          <div className="h-5" /> 
+          <div className="h-5" />
         </div>
       </div>
     );
@@ -203,15 +189,13 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
   return (
     <div className="flex flex-col h-screen">
       <Header title="Parcelamento da Venda" onBack={onBack} />
-      
+
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Total Amount */}
         <Card>
           <div className="text-center">
             <p className="text-gray-600 mb-2">Valor Total da Venda</p>
-            <p className="text-3xl font-bold text-emerald-600">
-              {formatCurrency(totalAmount)}
-            </p>
+            <p className="text-3xl font-bold text-emerald-600">{formatCurrency(totalAmount)}</p>
           </div>
         </Card>
 
@@ -225,7 +209,19 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
             <Button
               variant="outline"
               icon={Plus}
-             onClick={() => onNavigate('add-customer', { fromInstallmentSale: true })}
+              onClick={() =>
+                onNavigate('add-customer', {
+                  fromInstallmentSale: true,
+                  saleData,
+                  // Passa um callback para receber o novo cliente e voltar com ele selecionado
+                  onSuccess: (newCustomer: Customer) => {
+                    // Atualiza a lista (mínima alteração, mantendo seu padrão atual)
+                    customers.push(newCustomer);
+                    // Seleciona automaticamente o novo cliente
+                    setSelectedCustomerId(newCustomer.id);
+                  }
+                })
+              }
               size="sm"
             >
               Novo
@@ -238,7 +234,16 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
               <Button
                 variant="primary"
                 icon={Plus}
-               onClick={() => onNavigate('add-customer', { fromInstallmentSale: true })}
+                onClick={() =>
+                  onNavigate('add-customer', {
+                    fromInstallmentSale: true,
+                    saleDate,
+                    onSuccess: (newCustomer: Customer) => {
+                      customers.push(newCustomer);
+                      setSelectedCustomerId(newCustomer.id);
+                    }
+                  })
+                }
               >
                 Adicionar Primeiro Cliente
               </Button>
@@ -301,9 +306,7 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
                   <span className="font-medium text-gray-700">Resumo do Parcelamento</span>
                 </div>
                 <div className="space-y-1 text-sm">
-                  <p className="text-gray-600">
-                    Valor restante: {formatCurrency(remainingAmount)}
-                  </p>
+                  <p className="text-gray-600">Valor restante: {formatCurrency(remainingAmount)}</p>
                   <p className="text-emerald-600 font-semibold">
                     {installmentCount}x de {formatCurrency(installmentAmount)}
                   </p>
@@ -323,10 +326,8 @@ export const InstallmentSaleScreen: React.FC<InstallmentSaleScreenProps> = ({
         >
           Registrar Venda
         </Button>
-        {/* Aumento do espaço extra para garantir que o botão não seja cortado */}
-        <div className="h-60" /> 
+        <div className="h-60" />
       </div>
     </div>
   );
 };
-

@@ -5,12 +5,14 @@ import { Card } from '../../components/UI/Card';
 import { Input } from '../../components/UI/Input';
 import { Button } from '../../components/UI/Button';
 import { useAuth } from '../../hooks/useAuth';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface LoginScreenProps {
   onNavigate: (screen: string) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
+  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,7 +48,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
 
   return (
     <div>
-      <Header title="Entrar" showLogo />
+      <Header title="Invenda" showLogo />
       
       <div className="p-6">
         <Card>
@@ -68,14 +70,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
               required
             />
 
+            <div className="relative">
             <Input
               label="Senha"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               value={password}
               onChange={setPassword}
               required
             />
+            <button
+    type="button"
+    className="absolute right-3 top-9 text-gray-500"
+    onClick={() => setShowPassword(!showPassword)} // 👈 alterna visibilidade
+  >
+    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+  </button>
+              </div>
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">

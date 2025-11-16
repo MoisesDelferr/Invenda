@@ -56,7 +56,11 @@ type Screen =
   | 'account-plan'
   | 'config';
 
-function App() {
+interface AppProps {
+  initialScreen?: Screen;
+}
+
+function App({ initialScreen }: AppProps) {
   const { user, loading: authLoading } = useAuth();
   const {
     products,
@@ -66,18 +70,20 @@ function App() {
     loading: dataLoading,
     addProduct,
     updateProductStock,
-    // ✅ CORREÇÃO 1: updateProductPrice incluída com a vírgula correta.
     updateProductPrice,
     addMultipleItemsSale,
     addInstallmentSale,
-    addCustomer, // <-- CORRIGIDO: Linha duplicada removida
+    addCustomer,
     updateCustomer,
     addPaymentToSale,
     deleteSale,
     getProductBySKU,
     deleteProduct,
   } = useStorage();
-  const [currentScreen, setCurrentScreen] = useState<Screen>(user ? 'home' : 'login');
+
+  const [currentScreen, setCurrentScreen] = useState<Screen>(
+    initialScreen || (user ? 'home' : 'login')
+  );
   const [screenData, setScreenData] = useState<any>(null);
 
   // CORREÇÃO ESSENCIAL PARA O MENU: Sincroniza a tela após o login/carregamento de autenticação
@@ -212,26 +218,34 @@ function App() {
           />
         );
       case 'add-customer':
-        return (
-          <AddCustomerScreen
-            onBack={() => {
-              if (screenData?.fromInstallmentSale) {
-                setCurrentScreen('installment-sale');
-              } else {
-                setCurrentScreen('customers');
-              }
-            }}
-            onAddCustomer={addCustomer}
-            onSuccess={() => {
-              if (screenData?.fromInstallmentSale) {
-                setCurrentScreen('installment-sale');
-              } else {
-                setCurrentScreen('customers');
-              }
-            }}
-            fromInstallmentSale={screenData?.fromInstallmentSale}
-          />
-        );
+  return (
+    <AddCustomerScreen
+      onBack={() => {
+        if (screenData?.fromInstallmentSale) {
+          // volta para parcelamento preservando os dados da venda
+          setCurrentScreen('installment-sale');
+          setScreenData(screenData.saleData);
+        } else {
+          setCurrentScreen('customers');
+        }
+      }}
+      onAddCustomer={addCustomer}
+      onSuccess={(newCustomer: Customer) => {
+        if (screenData?.onSuccess) {
+          screenData.onSuccess(newCustomer); // devolve o cliente criado
+        }
+        if (screenData?.fromInstallmentSale) {
+          // volta para parcelamento preservando os dados da venda
+          setCurrentScreen('installment-sale');
+          setScreenData(screenData.saleData);
+        } else {
+          setCurrentScreen('customers');
+        }
+      }}
+      fromInstallmentSale={screenData?.fromInstallmentSale}
+    />
+  );
+
       case 'delete-sales':
         return (
           <DeleteSalesScreen

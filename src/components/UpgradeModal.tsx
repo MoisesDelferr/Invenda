@@ -1,5 +1,6 @@
 import { X, Crown, Sparkles } from 'lucide-react';
 import { Button } from './UI/Button';
+import { useStripe } from '../hooks/useStripe';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -18,11 +19,12 @@ export function UpgradeModal({
   currentCount,
   limit
 }: UpgradeModalProps) {
+  const { redirectToCheckout, loading, error } = useStripe();
+
   if (!isOpen) return null;
 
-  const handleUpgrade = () => {
-    // TODO: Navigate to payment/upgrade flow
-    alert('Integração com pagamento será implementada em breve!');
+  const handleUpgrade = async () => {
+    await redirectToCheckout();
   };
 
   return (
@@ -82,22 +84,40 @@ export function UpgradeModal({
             </ul>
           </div>
 
+          {/* Error Display */}
+          {error && (
+            <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex gap-3">
             <Button
               variant="secondary"
               onClick={onClose}
               className="flex-1"
+              disabled={loading}
             >
               Depois
             </Button>
             <Button
               variant="primary"
               onClick={handleUpgrade}
-              className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold"
+              className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading}
             >
-              <Crown className="w-4 h-4 mr-2" />
-              Fazer Upgrade
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <Crown className="w-4 h-4 mr-2" />
+                  Fazer Upgrade
+                </>
+              )}
             </Button>
           </div>
         </div>
