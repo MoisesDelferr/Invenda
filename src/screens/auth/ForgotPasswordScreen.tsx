@@ -104,7 +104,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
               type="email"
               placeholder="seu@email.com"
               value={email}
-              onChange={setEmail}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
 
