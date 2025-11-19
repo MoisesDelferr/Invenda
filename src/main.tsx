@@ -12,7 +12,6 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/*" element={<App />} />
 
         {/* Rota específica para reset de senha */}
-        <Route path="/reset-password" element={<App initialScreen="reset-password" />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>
