@@ -66,7 +66,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
               type="text"
               placeholder="seu@email.com"
               value={email}
-              onChange={setEmail}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
 
@@ -76,7 +76,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               value={password}
-              onChange={setPassword}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
             <button
