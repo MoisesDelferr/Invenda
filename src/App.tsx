@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 
 import { useAuth } from './hooks/useAuth';
@@ -80,7 +81,14 @@ function App({ initialScreen }: AppProps) {
     getProductBySKU,
     deleteProduct,
   } = useStorage();
+const location = useLocation();
 
+useEffect(() => {
+  if (!initialScreen && location.pathname === '/reset-password') {
+    setCurrentScreen('reset-password');
+  }
+}, [location.pathname, initialScreen]);
+  
   const [currentScreen, setCurrentScreen] = useState<Screen>(
     initialScreen || (user ? 'home' : 'login')
   );
