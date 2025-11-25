@@ -1,17 +1,10 @@
-import { useLocation } from 'react-router-dom';
-import React, { useState, useEffect } from 'react';
-
-import { useAuth } from './hooks/useAuth';
-import { useStorage } from './hooks/useStorage';
+import React from 'react';
 
 import { LoginScreen } from './screens/auth/LoginScreen';
 import { RegisterScreen } from './screens/auth/RegisterScreen';
 import { ForgotPasswordScreen } from './screens/auth/ForgotPasswordScreen';
 import { ResetPasswordScreen } from './screens/auth/ResetPasswordScreen';
 
-import { MainLayout } from './components/Layout/MainLayout';
-
-import { HomeScreen } from './screens/HomeScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import { StockScreen } from './screens/StockScreen';
 import { AddProductScreen } from './screens/AddProductScreen';
@@ -25,98 +18,20 @@ import { CustomersScreen } from './screens/CustomersScreen';
 import { CustomerDetailScreen } from './screens/CustomerDetailScreen';
 import { EditCustomerScreen } from './screens/EditCustomerScreen';
 import { SaleDetailScreen } from './screens/SaleDetailScreen';
-import { BottomNavigation } from './components/Layout/BottomNavigation';
-import { PaymentModal } from './components/PaymentModal';
 import { OpenSalesListScreen } from './screens/OpenSalesListScreen';
 import { AccountPlanScreen } from './screens/AccountPlanScreen';
-
-import { Menu } from 'lucide-react';
 import { ConfigScreen } from './screens/SettingsScreen';
 
-type Screen =
-  | 'login'
-  | 'register'
-  | 'forgot-password'
-  | 'reset-password'
-  | 'home'
-  | 'dashboard'
-  | 'stock'
-  | 'add-product'
-  | 'add-stock'
-  | 'product-detail'
-  | 'register-sale'
-  | 'installment-sale'
-  | 'add-customer'
-  | 'delete-sales'
-  | 'customers'
-  | 'customer-detail'
-  | 'edit-customer'
-  | 'sale-detail'
-  | 'payment-modal'
-  | 'open-sales-list'
-  | 'account-plan'
-  | 'config';
+import { MainLayout } from './components/Layout/MainLayout';
+import { BottomNavigation } from './components/Layout/BottomNavigation';
+import { PaymentModal } from './components/PaymentModal';
+import { Menu } from 'lucide-react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-interface AppProps {
-  initialScreen?: Screen;
-}
-
-function App({ initialScreen }: AppProps) {
+function App() {
   const { user, loading: authLoading } = useAuth();
-  const {
-    products,
-    sales,
-    customers,
-    installmentSales,
-    loading: dataLoading,
-    addProduct,
-    updateProductStock,
-    updateProductPrice,
-    addMultipleItemsSale,
-    addInstallmentSale,
-    addCustomer,
-    updateCustomer,
-    addPaymentToSale,
-    deleteSale,
-    getProductBySKU,
-    deleteProduct,
-  } = useStorage();
-const location = useLocation();
+  const { loading: dataLoading } = useStorage();
 
-useEffect(() => {
-  if (!initialScreen && location.pathname === '/reset-password') {
-    setCurrentScreen('reset-password');
-  }
-}, [location.pathname, initialScreen]);
-  
-  const [currentScreen, setCurrentScreen] = useState<Screen>(
-    initialScreen || (user ? 'home' : 'login')
-  );
-  const [screenData, setScreenData] = useState<any>(null);
-
-  // CORREÇÃO ESSENCIAL PARA O MENU: Sincroniza a tela após o login/carregamento de autenticação
-  useEffect(() => {
-    // Se o carregamento terminou E o usuário está logado, mas a tela ainda é de autenticação,
-    // navega para 'home' para exibir o menu inferior.
-    if (!authLoading && user && ['login', 'register', 'forgot-password', 'reset-password'].includes(currentScreen)) {
-      setCurrentScreen('home');
-    }
-  }, [authLoading, user]);
-
-
-  const handleNavigate = (screen: Screen, data?: any) => {
-    setCurrentScreen(screen);
-    setScreenData(data);
-  };
-
-  const handleGoHome = () => {
-    setCurrentScreen(user ? 'home' : 'login');
-    setScreenData(null);
-  };
-
-  // Loading
-  if (authLoading || (user && dataLoading)) {
-    return (
       <MainLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
@@ -127,7 +42,43 @@ useEffect(() => {
       </MainLayout>
     );
   }
+   return (
+    <BrowserRouter>
+      <Routes>
+        {/* Rotas públicas */}
+        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/register" element={<RegisterScreen />} />
+        <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
+        <Route path="/reset-password" element={<ResetPasswordScreen />} />
 
+        {/* Rotas privadas */}
+        {user && (
+          <>
+            <Route path="/dashboard" element={<DashboardScreen />} />
+            <Route path="/stock" element={<StockScreen />} />
+            <Route path="/add-product" element={<AddProductScreen />} />
+            <Route path="/add-stock" element={<AddStockScreen />} />
+            <Route path="/product-detail" element={<ProductDetailScreen />} />
+            <Route path="/register-sale" element={<RegisterSaleScreen />} />
+            <Route path="/installment-sale" element={<InstallmentSaleScreen />} />
+            <Route path="/add-customer" element={<AddCustomerScreen />} />
+            <Route path="/delete-sales" element={<DeleteSalesScreen />} />
+            <Route path="/customers" element={<CustomersScreen />} />
+            <Route path="/customer-detail" element={<CustomerDetailScreen />} />
+            <Route path="/edit-customer" element={<EditCustomerScreen />} />
+            <Route path="/sale-detail" element={<SaleDetailScreen />} />
+            <Route path="/open-sales-list" element={<OpenSalesListScreen />} />
+            <Route path="/account-plan" element={<AccountPlanScreen />} />
+            <Route path="/config" element={<ConfigScreen />} />
+          </>
+        )}
+
+        {/* Rota padrão */}
+        <Route path="*" element={<LoginScreen />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
   // Auth
   if (!user) {
     const renderAuthScreen = () => {
