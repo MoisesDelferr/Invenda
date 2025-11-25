@@ -31,7 +31,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 function App() {
   const { user, loading: authLoading } = useAuth();
   const { loading: dataLoading } = useStorage();
-
+  
+if (authLoading || (user && dataLoading)) {
+    return (
       <MainLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
@@ -42,6 +44,7 @@ function App() {
       </MainLayout>
     );
   }
+
    return (
     <BrowserRouter>
       <Routes>
