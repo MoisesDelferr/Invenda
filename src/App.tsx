@@ -1,4 +1,8 @@
 import React from 'react';
+// ✅ CORREÇÕES: Adicionando as importações dos hooks e do componente ausentes.
+import { useAuth } from './hooks/useAuth'; 
+import { useStorage } from './hooks/useStorage'; 
+import { HomeScreen } from './screens/HomeScreen';
 
 import { LoginScreen } from './screens/auth/LoginScreen';
 import { RegisterScreen } from './screens/auth/RegisterScreen';
@@ -26,13 +30,14 @@ import { MainLayout } from './components/Layout/MainLayout';
 import { BottomNavigation } from './components/Layout/BottomNavigation';
 import { PaymentModal } from './components/PaymentModal';
 import { Menu } from 'lucide-react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'; 
 
 function App() {
   const { user, loading: authLoading } = useAuth();
   const { loading: dataLoading } = useStorage();
   
-if (authLoading || (user && dataLoading)) {
+  // Condicional de carregamento
+  if (authLoading || (user && dataLoading)) {
     return (
       <MainLayout>
         <div className="min-h-screen flex items-center justify-center">
@@ -45,7 +50,8 @@ if (authLoading || (user && dataLoading)) {
     );
   }
 
-   return (
+  // Lógica de Roteamento com react-router-dom
+  return (
     <BrowserRouter>
       <Routes>
         {/* Rotas públicas */}
@@ -54,9 +60,10 @@ if (authLoading || (user && dataLoading)) {
         <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
         <Route path="/reset-password" element={<ResetPasswordScreen />} />
 
-        {/* Rotas privadas */}
-        {user && (
-          <>
+        {/* Rotas privadas (acessíveis apenas se 'user' existir) */}
+        {user ? (
+          <Route element={<MainLayout withBottomNavigation={true} />}>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardScreen />} />
             <Route path="/stock" element={<StockScreen />} />
             <Route path="/add-product" element={<AddProductScreen />} />
@@ -73,256 +80,19 @@ if (authLoading || (user && dataLoading)) {
             <Route path="/open-sales-list" element={<OpenSalesListScreen />} />
             <Route path="/account-plan" element={<AccountPlanScreen />} />
             <Route path="/config" element={<ConfigScreen />} />
-          </>
+            {/* Redireciona qualquer rota desconhecida para o dashboard se estiver logado */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Route>
+        ) : (
+          /* Redireciona qualquer rota não pública para o login se não estiver logado */
+          <Route path="*" element={<Navigate to="/login" replace />} />
         )}
-
-        {/* Rota padrão */}
-        <Route path="*" element={<LoginScreen />} />
       </Routes>
     </BrowserRouter>
   );
-}
-  // Auth
-  if (!user) {
-    const renderAuthScreen = () => {
-      switch (currentScreen) {
-        case 'register':
-          return <RegisterScreen onNavigate={handleNavigate} />;
-        case 'forgot-password':
-          return <ForgotPasswordScreen onNavigate={handleNavigate} />;
-        case 'reset-password':
-          return <ResetPasswordScreen onNavigate={handleNavigate} />;
-        default:
-          return <LoginScreen onNavigate={handleNavigate} />;
-      }
-    };
-
-    return (
-      <MainLayout>
-        {renderAuthScreen()}
-      </MainLayout>
-    );
-  }
-
-  // Render Screens
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'home':
-        return <HomeScreen onNavigate={handleNavigate} />;
-      case 'dashboard':
-        return (
-          <DashboardScreen
-            sales={sales}
-            installmentSales={installmentSales}
-            onBack={handleGoHome}
-            onViewSale={(sale) => handleNavigate('sale-detail', sale)}
-            onViewInstallmentSale={(sale) => {
-              const customer = customers.find((c) => c.id === sale.customerId);
-              const customerInstallmentSales = installmentSales.filter((s) => s.customerId === sale.customerId);
-              handleNavigate('customer-detail', { customer, installmentSales: customerInstallmentSales });
-            }}
-            onAddPayment={addPaymentToSale}
-            onNavigate={handleNavigate}
-          />
-        );
-      case 'stock':
-        return (
-          <StockScreen
-            products={products}
-            onBack={handleGoHome}
-            onNavigate={handleNavigate}
-          />
-        );
-      case 'add-product':
-        return (
-          <AddProductScreen
-            onBack={() => setCurrentScreen('stock')}
-            onAddProduct={addProduct}
-          />
-        );
-      case 'add-stock':
-        return (
-          <AddStockScreen
-            products={products}
-            onBack={() => setCurrentScreen('stock')}
-            onUpdateStock={updateProductStock}
-          />
-        );
-       case 'product-detail':
-        return (
-          <ProductDetailScreen
-            product={screenData}
-            onBack={() => setCurrentScreen('stock')}
-            onUpdateStock={updateProductStock}
-            onDeleteProduct={deleteProduct}
-            // ✅ CORREÇÃO 2: onUpdatePrice passada como prop.
-            onUpdatePrice={updateProductPrice}
-          />
-        );
-      case 'register-sale':
-        return (
-          <RegisterSaleScreen
-            products={products}
-            onBack={handleGoHome}
-            onAddSale={addMultipleItemsSale}
-            onNavigate={handleNavigate}
-            getProductBySKU={getProductBySKU}
-          />
-        );
-      case 'installment-sale':
-        return (
-          <InstallmentSaleScreen
-            customers={customers}
-            saleData={screenData}
-            onBack={() => setCurrentScreen('register-sale')}
-            onAddInstallmentSale={addInstallmentSale}
-            onNavigate={handleNavigate}
-          />
-        );
-      case 'add-customer':
-  return (
-    <AddCustomerScreen
-      onBack={() => {
-        if (screenData?.fromInstallmentSale) {
-          // volta para parcelamento preservando os dados da venda
-          setCurrentScreen('installment-sale');
-          setScreenData(screenData.saleData);
-        } else {
-          setCurrentScreen('customers');
-        }
-      }}
-      onAddCustomer={addCustomer}
-      onSuccess={(newCustomer: Customer) => {
-        if (screenData?.onSuccess) {
-          screenData.onSuccess(newCustomer); // devolve o cliente criado
-        }
-        if (screenData?.fromInstallmentSale) {
-          // volta para parcelamento preservando os dados da venda
-          setCurrentScreen('installment-sale');
-          setScreenData(screenData.saleData);
-        } else {
-          setCurrentScreen('customers');
-        }
-      }}
-      fromInstallmentSale={screenData?.fromInstallmentSale}
-    />
-  );
-
-      case 'delete-sales':
-        return (
-          <DeleteSalesScreen
-            sales={sales}
-            onBack={handleGoHome}
-            onDeleteSale={deleteSale}
-          />
-        );
-      case 'customers':
-        return (
-          <CustomersScreen
-            customers={customers}
-            installmentSales={installmentSales}
-            onBack={handleGoHome}
-            onNavigate={handleNavigate}
-          />
-        );
-      case 'customer-detail':
-        return (
-          <CustomerDetailScreen
-            customer={screenData.customer}
-            installmentSales={screenData.installmentSales}
-            onBack={() => setCurrentScreen('customers')}
-            onNavigate={handleNavigate}
-            onAddPayment={addPaymentToSale}
-          />
-        );
-      case 'edit-customer':
-        return (
-          <EditCustomerScreen
-            customer={screenData}
-            onBack={() => {
-              const customerInstallmentSales = installmentSales.filter((s) => s.customerId === screenData.id);
-              handleNavigate('customer-detail', { customer: screenData, installmentSales: customerInstallmentSales });
-            }}
-            onUpdateCustomer={updateCustomer}
-          />
-        );
-      case 'sale-detail':
-        return (
-          <SaleDetailScreen
-            sale={screenData}
-            onBack={() => {
-              const previousScreen = screenData.previousScreen || 'dashboard';
-              setCurrentScreen(previousScreen);
-            }}
-          />
-        );
-      case 'payment-modal':
-        return (
-          <PaymentModal
-            sale={screenData.sale}
-            onBack={() => setCurrentScreen(screenData.previousScreen || 'dashboard')}
-            onAddPayment={addPaymentToSale}
-          />
-        );
-      case 'open-sales-list':
-        return (
-          <OpenSalesListScreen
-            installmentSales={installmentSales}
-            onBack={() => setCurrentScreen('dashboard')}
-            onNavigate={handleNavigate}
-            onAddPayment={addPaymentToSale}
-          />
-        );
-      case 'account-plan':
-        return (
-          <AccountPlanScreen />
-        );
-      case 'config':
-        return (
-          <ConfigScreen
-            user={user}
-            onBack={handleGoHome}
-            onNavigate={handleNavigate}
-          />
-        );
-      default:
-        return <HomeScreen onNavigate={handleNavigate} />;
-    }
-  };
-
-  return (
-    <MainLayout>
-      {/* Menu button */}
-      {currentScreen !== 'config' && (
-        <div className="fixed top-4 right-4 z-50">
-          <button
-            onClick={() => handleNavigate('config')}
-            className="p-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
-          >
-            <Menu className="w-6 h-6 text-gray-700" />
-          </button>
-        </div>
-      )}
-
-      <div
-        className={
-          user && !['login', 'register', 'forgot-password', 'reset-password', 'config'].includes(currentScreen)
-            ? 'pb-14' // ⬅️ Tente 'pb-14' (56px). Se ainda sobrepor, use 'pb-16' (64px).
-            : ''
-        }
-      >
-        {renderScreen()}
-      </div>
-
-      {/* Bottom Navigation */}
-      {user && !['login', 'register', 'forgot-password', 'reset-password', 'config', 'payment-modal'].includes(currentScreen) && (
-        <BottomNavigation
-          currentScreen={currentScreen}
-          onNavigate={handleNavigate}
-        />
-      )}
-    </MainLayout>
-  );
+  // O código de roteamento manual (com switch/case e currentScreen) que estava abaixo
+  // foi REMOVIDO pois é uma arquitetura de roteamento conflitante com o react-router-dom.
+  // A lógica de layout e navegação inferior deve ser tratada dentro dos componentes de rota.
 }
 
 export default App;
