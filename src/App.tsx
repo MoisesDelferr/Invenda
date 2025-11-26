@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+// IMPORTANTE: Removemos 'BrowserRouter as Router' para não duplicar, mas mantivemos os outros.
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'; 
 
 import { useAuth } from './hooks/useAuth';
 import { useStorage } from './hooks/useStorage';
@@ -33,9 +34,8 @@ import { AccountPlanScreen } from './screens/AccountPlanScreen';
 import { Menu } from 'lucide-react';
 import { ConfigScreen } from './screens/SettingsScreen';
 
-// ⚠️ ATENÇÃO: A interface Screen e a prop initialScreen não são mais usadas
-// diretamente para roteamento, mas mantidas por compatibilidade se outras partes
-// do código as utilizarem. No entanto, o roteamento principal agora é feito por URL.
+// ⚠️ Se o tipo Customer estiver em outro arquivo, você DEVE importá-lo aqui.
+// Exemplo (se for o caso): import { Customer } from './types/Customer';
 
 type Screen =
   | 'login'
@@ -66,11 +66,10 @@ interface AppProps {
 }
 
 // -------------------------------------------------------------------------
-// 💡 Componente de Roteamento Principal (InternalRouter)
+// 💡 Novo Componente Principal 'App'
+// Ele assume que já está dentro de um <Router> em 'index.tsx'/'main.tsx'.
 // -------------------------------------------------------------------------
-// Componente Wrapper para usar hooks do router (useNavigate, useLocation)
-// que só podem ser usados dentro do <Router>.
-function InternalRouter() {
+function App({ initialScreen }: AppProps) {
   const { user, loading: authLoading } = useAuth();
   const {
     products,
@@ -91,21 +90,17 @@ function InternalRouter() {
     deleteProduct,
   } = useStorage();
 
-  // O estado 'currentScreen' será substituído por 'useLocation().pathname' e 'useNavigate'
-  // No entanto, para manter a lógica de screenData/handleNavigate para dados complexos:
   const [screenData, setScreenData] = useState<any>(null);
   
   const navigate = useNavigate();
   const location = useLocation();
   
-  // A partir de agora, o 'currentScreen' será inferido pela URL
-  const currentPath = location.pathname.substring(1) as Screen | string; // Ex: /home -> home
+  // O estado 'currentScreen' não é mais usado, mas o 'currentPath' sim.
+  const currentPath = location.pathname.substring(1) as Screen | string; 
 
   // Função handleNavigate atualizada para usar o `Maps` do react-router-dom
   const handleNavigate = (screen: Screen, data?: any) => {
-    // Para navegação, o 'screen' agora é o caminho da URL
     navigate(`/${screen}`);
-    // Mantém screenData para passar dados complexos entre rotas (embora não seja o ideal, mantém a lógica original)
     setScreenData(data);
   };
   
@@ -121,16 +116,12 @@ function InternalRouter() {
   // CORREÇÃO ESSENCIAL PARA O MENU: Sincroniza a tela após o login/carregamento de autenticação
   useEffect(() => {
     const authScreens = ['/login', '/register', '/forgot-password', '/reset-password'];
-    // Se o carregamento terminou E o usuário está logado, mas está em uma rota de autenticação,
-    // navega para '/home'.
+    
     if (!authLoading && user && authScreens.includes(location.pathname)) {
       navigate('/home', { replace: true });
     }
-    // Se o carregamento terminou E o usuário NÃO está logado, mas NÃO está em uma rota auth/reset-password,
-    // navega para '/login'.
     else if (!authLoading && !user && !authScreens.includes(location.pathname) && location.pathname !== '/') {
-        // Redireciona tudo que não for auth para login, exceto se for o reset-password vindo do email.
-        // O Supabase envia o token para a URL, e o ResetPasswordScreen precisa ser carregado.
+        // Redireciona tudo que não for auth para login.
         if (!location.pathname.startsWith('/reset-password')) {
             navigate('/login', { replace: true });
         }
@@ -152,9 +143,6 @@ function InternalRouter() {
     );
   }
 
-  // O bloco de renderização de telas foi movido para dentro do <Routes>
-
-  // Os paths que precisam do BottomNavigation e do botão de Menu
   const isAuthScreen = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
   const isConfigScreen = location.pathname === '/config';
   const isPaymentModal = location.pathname === '/payment-modal';
@@ -162,7 +150,7 @@ function InternalRouter() {
   return (
     <MainLayout>
       {/* Menu button */}
-      {!isConfigScreen && user && ( // Adicionado 'user' para só mostrar se estiver logado
+      {!isConfigScreen && user && ( 
         <div className="fixed top-4 right-4 z-50">
           <button
             onClick={() => handleNavigate('config')}
@@ -176,25 +164,24 @@ function InternalRouter() {
       <div
         className={
           user && !isAuthScreen && !isConfigScreen && !isPaymentModal
-            ? 'pb-14' // ⬅️ Tente 'pb-14' (56px). Se ainda sobrepor, use 'pb-16' (64px).
+            ? 'pb-14'
             : ''
         }
       >
         <Routes>
           {/* ------------------------------------------------------------------ */}
-          {/* 🔑 ROTAS DE AUTENTICAÇÃO (Sempre acessíveis, mas redirecionam se logado) */}
-          {/* O componente AuthWrapper acima lida com o redirecionamento se o usuário estiver logado. */}
+          {/* 🔑 ROTAS DE AUTENTICAÇÃO */}
           {/* ------------------------------------------------------------------ */}
           <Route path="/" element={<LoginScreen onNavigate={handleNavigate} />} />
           <Route path="/login" element={<LoginScreen onNavigate={handleNavigate} />} />
           <Route path="/register" element={<RegisterScreen onNavigate={handleNavigate} />} />
           <Route path="/forgot-password" element={<ForgotPasswordScreen onNavigate={handleNavigate} />} />
           
-          {/* 🎯 ROTA ESSENCIAL: /reset-password, que é acessada diretamente pelo link do Supabase */}
+          {/* 🎯 ROTA DE RESET DE SENHA (Acessada pelo Supabase) */}
           <Route path="/reset-password" element={<ResetPasswordScreen onNavigate={handleNavigate} />} />
           
           {/* ------------------------------------------------------------------ */}
-          {/* 🏠 ROTAS PRINCIPAIS (Protegidas pelo useEffect acima) */}
+          {/* 🏠 ROTAS PRINCIPAIS */}
           {/* ------------------------------------------------------------------ */}
           
           <Route path="/home" element={<HomeScreen onNavigate={handleNavigate} />} />
@@ -235,7 +222,7 @@ function InternalRouter() {
           } />
           <Route path="/product-detail" element={
             <ProductDetailScreen
-              product={screenData} // Usa screenData
+              product={screenData} 
               onBack={() => handleNavigate('stock')}
               onUpdateStock={updateProductStock}
               onDeleteProduct={deleteProduct}
@@ -254,7 +241,7 @@ function InternalRouter() {
           <Route path="/installment-sale" element={
             <InstallmentSaleScreen
               customers={customers}
-              saleData={screenData} // Usa screenData
+              saleData={screenData} 
               onBack={() => handleNavigate('register-sale')}
               onAddInstallmentSale={addInstallmentSale}
               onNavigate={handleNavigate}
@@ -264,19 +251,18 @@ function InternalRouter() {
             <AddCustomerScreen
               onBack={() => {
                 if (screenData?.fromInstallmentSale) {
-                  // volta para parcelamento preservando os dados da venda
                   handleNavigate('installment-sale', screenData.saleData);
                 } else {
                   handleNavigate('customers');
                 }
               }}
+              // ⚠️ NOTE: Se o tipo Customer não estiver definido, use 'any' aqui
               onAddCustomer={addCustomer}
-              onSuccess={(newCustomer: Customer) => {
+              onSuccess={(newCustomer: any) => { 
                 if (screenData?.onSuccess) {
-                  screenData.onSuccess(newCustomer); // devolve o cliente criado
+                  screenData.onSuccess(newCustomer);
                 }
                 if (screenData?.fromInstallmentSale) {
-                  // volta para parcelamento preservando os dados da venda
                   handleNavigate('installment-sale', screenData.saleData);
                 } else {
                   handleNavigate('customers');
@@ -302,8 +288,8 @@ function InternalRouter() {
           } />
           <Route path="/customer-detail" element={
             <CustomerDetailScreen
-              customer={screenData.customer} // Usa screenData
-              installmentSales={screenData.installmentSales} // Usa screenData
+              customer={screenData.customer} 
+              installmentSales={screenData.installmentSales} 
               onBack={() => handleNavigate('customers')}
               onNavigate={handleNavigate}
               onAddPayment={addPaymentToSale}
@@ -311,7 +297,7 @@ function InternalRouter() {
           } />
           <Route path="/edit-customer" element={
             <EditCustomerScreen
-              customer={screenData} // Usa screenData
+              customer={screenData} 
               onBack={() => {
                 const customerInstallmentSales = installmentSales.filter((s) => s.customerId === screenData.id);
                 handleNavigate('customer-detail', { customer: screenData, installmentSales: customerInstallmentSales });
@@ -321,7 +307,7 @@ function InternalRouter() {
           } />
           <Route path="/sale-detail" element={
             <SaleDetailScreen
-              sale={screenData} // Usa screenData
+              sale={screenData} 
               onBack={() => {
                 const previousScreen = screenData.previousScreen || 'dashboard';
                 handleNavigate(previousScreen as Screen);
@@ -330,7 +316,7 @@ function InternalRouter() {
           } />
           <Route path="/payment-modal" element={
             <PaymentModal
-              sale={screenData.sale} // Usa screenData
+              sale={screenData.sale} 
               onBack={() => handleNavigate(screenData.previousScreen || 'dashboard')}
               onAddPayment={addPaymentToSale}
             />
@@ -354,7 +340,7 @@ function InternalRouter() {
             />
           } />
           
-          {/* Rota 404/Fallback (Se nenhuma rota acima corresponder, tenta ir para Home) */}
+          {/* Rota 404/Fallback */}
           <Route path="*" element={user ? <HomeScreen onNavigate={handleNavigate} /> : <LoginScreen onNavigate={handleNavigate} />} />
         
         </Routes>
@@ -363,25 +349,12 @@ function InternalRouter() {
       {/* Bottom Navigation */}
       {user && !isAuthScreen && !isConfigScreen && !isPaymentModal && (
         <BottomNavigation
-          currentScreen={currentPath as Screen} // Agora usa o caminho da URL como screen atual
+          currentScreen={currentPath as Screen} 
           onNavigate={handleNavigate}
         />
       )}
     </MainLayout>
   );
-}
-
-// -------------------------------------------------------------------------
-// 🚀 Componente App (Apenas para envolver com o <Router>)
-// -------------------------------------------------------------------------
-function App({ initialScreen }: AppProps) {
-    // ⚠️ ATENÇÃO: initialScreen foi mantido, mas não é mais usado na lógica de roteamento interna.
-    // O roteamento agora é feito pelo <InternalRouter> dentro do <Router>.
-    return (
-        <Router>
-            <InternalRouter />
-        </Router>
-    );
 }
 
 export default App;
