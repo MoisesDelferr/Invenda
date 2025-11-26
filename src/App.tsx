@@ -1,10 +1,3 @@
-Entendido. Você tem um aplicativo React que atualmente gerencia as telas (rotas) usando o estado local (`currentScreen` e `setCurrentScreen`) e `switch` statements, o que não funciona corretamente com a navegação direta por URL, como no caso do `/reset-password` enviado pelo Supabase.
-
-Vou implementar o `react-router-dom` no seu arquivo `app.tsx`, mantendo a lógica de carregamento e autenticação o mais intacta possível, mas substituindo o gerenciamento de estado das telas (`currentScreen`) pelo roteador.
-
-Aqui está o código completo com as modificações necessárias para usar o `react-router-dom`:
-
-```tsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
